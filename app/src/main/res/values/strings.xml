@@ -3,7 +3,7 @@
     <string name="title_passwords">密码本</string>
     <string name="title_schedule">日程表</string>
     <!-- 版本信息 -->
-    <string name="version_name">1.0.0</string>
+    <string name="version_name">1.0.1</string>
     
     <!-- 日程表 (Schedule) -->
     <string name="day_mon">周一</string>
