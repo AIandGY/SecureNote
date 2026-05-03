@@ -105,6 +105,19 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/divider" />
 
+            <!-- 检测更新按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_check_update"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_check_update"
+                app:icon="@android:drawable/stat_notify_sync"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btn_check_permissions" />
+
             <!-- GitHub 链接 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_github"
@@ -116,7 +129,7 @@
                 app:icon="@android:drawable/ic_menu_send"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btn_check_permissions" />
+                app:layout_constraintTop_toBottomOf="@id/btn_check_update" />
 
             <TextView
                 android:layout_width="wrap_content"

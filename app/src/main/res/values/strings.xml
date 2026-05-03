@@ -3,7 +3,7 @@
     <string name="title_passwords">密码本</string>
     <string name="title_schedule">日程表</string>
     <!-- 版本信息 -->
-    <string name="version_name">1.0.1</string>
+    <string name="version_name">1.0.0</string>
     
     <!-- 日程表 (Schedule) -->
     <string name="day_mon">周一</string>
@@ -47,8 +47,16 @@
     <!-- 关于页面 (activity_about.xml) -->
     <string name="app_display_name">SecureNote</string>
     <string name="btn_check_permissions">权限完整性检查</string>
+    <string name="btn_check_update">检测更新</string>
     <string name="btn_github_link">前往 GitHub 项目地址</string>
     <string name="copyright_info">© 2025 SecureNote Personal</string>
+
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_dialog_msg_format">最新版本：%1$s\n安装包大小：%2$s\n\n更新内容：\n%3$s</string>
+    <string name="update_dialog_btn_download">立即下载</string>
+    <string name="update_dialog_btn_cancel">以后再说</string>
+    <string name="update_no_new_version">当前已是最新版本</string>
+    <string name="update_check_failed">检查更新失败，请稍后重试</string>
 
     <!-- 写作页面 (activity_write.xml) -->
     <string name="btn_save">完成</string>

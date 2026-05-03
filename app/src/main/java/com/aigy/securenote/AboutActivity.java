@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -27,8 +28,20 @@ import com.aigy.securenote.databinding.ActivityAboutBinding;
 import com.aigy.securenote.utils.PrefUtils;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * 关于页面
@@ -103,6 +116,7 @@ public class AboutActivity extends AppCompatActivity {
 
         binding.btnGithub.setTextColor(textColor);
         binding.btnCheckPermissions.setIconTint(ColorStateList.valueOf(iconColor));
+        binding.btnCheckUpdate.setIconTint(ColorStateList.valueOf(iconColor));
         binding.btnGithub.setIconTint(ColorStateList.valueOf(iconColor));
     }
 
@@ -119,8 +133,119 @@ public class AboutActivity extends AppCompatActivity {
         // 启动权限完整性检查流程
         binding.btnCheckPermissions.setOnClickListener(v -> startPermissionCheckFlow());
 
+        // 检测更新
+        binding.btnCheckUpdate.setOnClickListener(v -> checkUpdate());
+
         // 连续点击图标开启开发者模式
         binding.ivLogo.setOnClickListener(v -> handleLogoClick());
+    }
+
+    /**
+     * 访问 GitHub API 检查最新版本
+     */
+    private void checkUpdate() {
+        String url = "https://api.github.com/repos/AIandGY/SecureNote/releases/latest";
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(url)
+                .header("User-Agent", "SecureNote-App")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                runOnUiThread(() -> showSnappyToast(getString(R.string.update_check_failed)));
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (response.isSuccessful() && response.body() != null) {
+                    String json = response.body().string();
+                    try {
+                        JSONObject jsonObject = new JSONObject(json);
+                        String latestTagName = jsonObject.optString("tag_name", "");
+                        String latestVersion = latestTagName.startsWith("v") ? latestTagName.substring(1) : latestTagName;
+                        String body = jsonObject.optString("body", "");
+                        
+                        // 获取下载链接和大小
+                        String downloadUrl = jsonObject.optString("html_url", "");
+                        long size = 0;
+                        JSONArray assets = jsonObject.optJSONArray("assets");
+                        if (assets != null && assets.length() > 0) {
+                            for (int i = 0; i < assets.length(); i++) {
+                                JSONObject asset = assets.getJSONObject(i);
+                                String name = asset.optString("name", "");
+                                if (name.toLowerCase().endsWith(".apk")) {
+                                    downloadUrl = asset.optString("browser_download_url", downloadUrl);
+                                    size = asset.optLong("size", 0);
+                                    break;
+                                }
+                            }
+                        }
+
+                        String currentVersion = getString(R.string.version_name);
+
+                        if (isNewerVersion(currentVersion, latestVersion)) {
+                            String finalDownloadUrl = downloadUrl;
+                            String formattedSize = formatFileSize(size);
+                            runOnUiThread(() -> showUpdateDialog(latestVersion, formattedSize, body, finalDownloadUrl));
+                        } else {
+                            runOnUiThread(() -> showSnappyToast(getString(R.string.update_no_new_version)));
+                        }
+                    } catch (JSONException e) {
+                        runOnUiThread(() -> showSnappyToast(getString(R.string.update_check_failed)));
+                    }
+                } else {
+                    runOnUiThread(() -> showSnappyToast(getString(R.string.update_check_failed)));
+                }
+            }
+        });
+    }
+
+    /**
+     * 字节换算为 MB
+     */
+    private String formatFileSize(long size) {
+        if (size <= 0) return "未知大小";
+        double mb = size / 1024.0 / 1024.0;
+        return String.format(Locale.getDefault(), "%.2f MB", mb);
+    }
+
+    /**
+     * 版本号对比逻辑 (大版本.修复版本.小更新版本)
+     */
+    private boolean isNewerVersion(String current, String latest) {
+        if (current == null || latest == null || current.isEmpty() || latest.isEmpty()) return false;
+        String[] currParts = current.split("\\.");
+        String[] lateParts = latest.split("\\.");
+        int length = Math.max(currParts.length, lateParts.length);
+        for (int i = 0; i < length; i++) {
+            int curr = i < currParts.length ? parseSafeInt(currParts[i]) : 0;
+            int late = i < lateParts.length ? parseSafeInt(lateParts[i]) : 0;
+            if (late > curr) return true;
+            if (late < curr) return false;
+        }
+        return false;
+    }
+
+    private int parseSafeInt(String s) {
+        try {
+            return Integer.parseInt(s.replaceAll("[^\\d]", ""));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private void showUpdateDialog(String version, String size, String body, String url) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.update_dialog_title)
+                .setMessage(getString(R.string.update_dialog_msg_format, version, size, body))
+                .setPositiveButton(R.string.update_dialog_btn_download, (dialog, which) -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(intent);
+                })
+                .setNegativeButton(R.string.update_dialog_btn_cancel, null)
+                .show();
     }
 
     /**
