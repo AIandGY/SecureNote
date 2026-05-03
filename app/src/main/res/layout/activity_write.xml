@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorSurface"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="?attr/homeAsUpIndicator">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_save"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp"
+            android:text="@string/btn_save"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:overScrollMode="never"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="24dp">
+
+            <EditText
+                android:id="@+id/et_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="@string/hint_title"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:maxLines="2"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- 辅助信息栏容器 -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layout_helper_info"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:animateLayoutChanges="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/et_title">
+
+                <!-- 第一行：时间戳 + AI 标识 -->
+                <LinearLayout
+                    android:id="@+id/layout_time_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <CheckBox
+                        android:id="@+id/cb_include_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8" />
+
+                    <TextView
+                        android:id="@+id/tv_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:alpha="0.6"
+                        android:textSize="11sp"
+                        tools:text="2025-02-20" />
+
+                    <LinearLayout
+                        android:id="@+id/layout_ai_tag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="10dp"
+                            android:layout_marginHorizontal="6dp"
+                            android:alpha="0.3"
+                            android:background="?attr/colorOnSurface" />
+                        <TextView
+                            android:id="@+id/tv_ai_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/tag_ai_generated"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 第二行：地点 + 天气 -->
+                <LinearLayout
+                    android:id="@+id/layout_location_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layout_time_container">
+                    <CheckBox
+                        android:id="@+id/cb_include_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8" />
+                    <TextView
+                        android:id="@+id/tv_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:alpha="0.6"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:maxWidth="120dp"
+                        android:text="@string/status_locating"
+                        android:textSize="11sp" />
+                    <ImageView
+                        android:id="@+id/iv_refresh_location"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="4dp"
+                        android:alpha="0.5"
+                        android:src="@android:drawable/ic_popup_sync"
+                        app:tint="?attr/colorPrimary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_weather_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toBottomOf="@id/layout_location_container"
+                    app:layout_constraintStart_toEndOf="@id/layout_location_container"
+                    app:layout_constraintTop_toTopOf="@id/layout_location_container">
+                    <CheckBox
+                        android:id="@+id/cb_include_weather"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8" />
+                    <TextView
+                        android:id="@+id/tv_weather"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:alpha="0.6"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 第三行：提醒选项 -->
+                <LinearLayout
+                    android:id="@+id/layout_daily_remind_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layout_location_container">
+                    <CheckBox
+                        android:id="@+id/cb_remind"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_remind_daily"
+                        android:textSize="11sp"/>
+                    <TextView
+                        android:id="@+id/tv_remind_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:alpha="0.4"
+                        android:text="@string/status_not_set"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_once_remind_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toBottomOf="@id/layout_daily_remind_container"
+                    app:layout_constraintStart_toEndOf="@id/layout_daily_remind_container"
+                    app:layout_constraintTop_toTopOf="@id/layout_daily_remind_container">
+                    <CheckBox
+                        android:id="@+id/cb_once_remind"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_remind_once"
+                        android:textSize="11sp"/>
+                    <TextView
+                        android:id="@+id/tv_once_remind_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:alpha="0.4"
+                        android:text="@string/status_not_set"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 第四行：优先级 -->
+                <TextView
+                    android:id="@+id/tv_priority_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:alpha="0.6"
+                    android:text="@string/label_priority"
+                    android:textSize="11sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layout_daily_remind_container" />
+
+                <Spinner
+                    android:id="@+id/spinner_importance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:spinnerMode="dropdown"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_priority_label"
+                    app:layout_constraintStart_toEndOf="@id/tv_priority_label"
+                    app:layout_constraintTop_toTopOf="@id/tv_priority_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_set_reminder"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/btn_set_reminder"
+                    android:textSize="11sp"
+                    app:layout_constraintBottom_toBottomOf="@id/spinner_importance"
+                    app:layout_constraintStart_toEndOf="@id/spinner_importance"
+                    app:layout_constraintTop_toTopOf="@id/spinner_importance" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <EditText
+                android:id="@+id/et_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@null"
+                android:gravity="top"
+                android:hint="@string/hint_content"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:minHeight="300dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="18sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layout_helper_info" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

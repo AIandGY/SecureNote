@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureNote -局域网笔记</title>
+    <!-- 引入 Google Fonts 和 Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <!-- 引入 CryptoJS 用于数据解密 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- 引入 pinyin-pro 支持拼音模糊搜索 -->
+    <script src="https://unpkg.com/pinyin-pro"></script>
+    <style>
+        :root {
+            /* 定义 Material Design 3 风格变量 */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-outline-variant: #CAC4D0;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-error: #B3261E;
+
+            /* 优先级颜色定义 */
+            --priority-0: #B3261E; /* 重要且紧急 - 红 */
+            --priority-1: #005FB0; /* 重要不紧急 - 蓝 */
+            --priority-2: #E4A100; /* 紧急不重要 - 黄 */
+            --priority-3: #79747E; /* 不重要不紧急 - 灰 */
+        }
+
+        body {
+            font-family: 'Roboto', 'Google Sans', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 侧边栏基础样式 */
+        .sidebar {
+            width: 280px;
+            background-color: var(--md-sys-color-surface-container);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            overflow-x: hidden;
+            z-index: 100;
+        }
+
+        /* 侧边栏折叠状态 */
+        .sidebar.collapsed { width: 80px; }
+
+        .sidebar-header {
+            padding: 16px;
+            font-family: 'Google Sans';
+            font-size: 22px;
+            color: var(--md-sys-color-primary);
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 统一图标间距 */
+        .sidebar-header .material-icons-outlined,
+        .nav-item .material-icons-outlined {
+            margin-right: 12px;
+            flex-shrink: 0;
+            width: 24px;
+            text-align: center;
+            transition: margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 折叠状态下移除图标右边距 */
+        .sidebar.collapsed .sidebar-header .material-icons-outlined,
+        .sidebar.collapsed .nav-item .material-icons-outlined {
+            margin-right: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 100px;
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: background-color 0.2s, color 0.2s, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-item:hover { background-color: rgba(103, 80, 164, 0.08); }
+        .nav-item.active {
+            background-color: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-primary-container);
+            font-weight: 500;
+        }
+
+        /* 侧边栏文字隐藏动画 */
+        .sidebar-header span:last-child,
+        .nav-item span:last-child {
+            transition: opacity 0.2s, width 0.2s;
+            opacity: 1;
+            display: inline-block;
+        }
+
+        .sidebar.collapsed .sidebar-header span:last-child,
+        .sidebar.collapsed .nav-item span:last-child {
+            opacity: 0;
+            width: 0;
+            pointer-events: none;
+        }
+
+        /* 修复折叠时图标居中对称性 */
+        .sidebar.collapsed .sidebar-header,
+        .sidebar.collapsed .nav-item {
+            padding-left: 28px;
+            padding-right: 16px;
+            justify-content: flex-start;
+        }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+        /* 顶部栏样式 */
+        .top-bar {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: rgba(254, 247, 255, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            gap: 16px;
+        }
+
+        .icon-button {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none; background: transparent;
+            color: var(--md-sys-color-on-surface-variant);
+            flex-shrink: 0;
+        }
+
+        .search-box {
+            background-color: var(--md-sys-color-surface-container-high);
+            border-radius: 100px; padding: 8px 16px;
+            display: flex; align-items: center; gap: 8px; flex: 1; max-width: 600px;
+        }
+        .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
+
+        /* 笔记网格样式 */
+        .notes-grid { 
+            padding: 24px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 16px; 
+            justify-items: center;
+        }
+
+        /* 卡片基础样式 */
+        .note-card {
+            background-color: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 16px; padding: 16px;
+            transition: all 0.2s; cursor: pointer;
+            display: flex; flex-direction: column; gap: 8px;
+            width: 100%;
+            height: auto;
+            min-width: 320px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .note-card:hover { box-shadow: 0 1px 3px rgba(0,0,0,0.2); border-color: var(--md-sys-color-primary); }
+
+        /* 头部布局优化：防止标签被长标题挤压 */
+        .note-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 12px;
+            width: 100%;
+        }
+        
+        /* 标题样式：多余文本显示省略号 */
+        .note-title { 
+            font-size: 18px; 
+            font-weight: 500; 
+            color: var(--md-sys-color-on-surface);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .note-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+        .meta-item { display: flex; align-items: center; gap: 4px; }
+        .meta-item i { font-size: 14px; }
+
+        .note-excerpt {
+            font-size: 14px; color: var(--md-sys-color-on-surface-variant);
+            line-height: 1.5; 
+            word-wrap: break-word;
+            flex: 1;
+        }
+
+        .note-footer {
+            margin-top: 8px; padding-top: 8px;
+            border-top: 1px dashed var(--md-sys-color-outline-variant);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .reminder-box {
+            display: flex; align-items: center; gap: 4px;
+            color: var(--md-sys-color-primary); font-weight: 500;
+        }
+        .reminder-box.expired { color: var(--md-sys-color-error); }
+
+        /* 标签样式优化：禁止被挤压 */
+        .importance-tag {
+            font-size: 10px; padding: 2px 8px; border-radius: 4px;
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-primary-container);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* 核心修复：确保优先级背景色生效 */
+        .priority-tag-0 { background-color: var(--priority-0) !important; color: white !important; }
+        .priority-tag-1 { background-color: var(--priority-1) !important; color: white !important; }
+        .priority-tag-2 { background-color: var(--priority-2) !important; color: black !important; }
+        .priority-tag-3 { background-color: var(--priority-3) !important; color: white !important; }
+
+        /* 编辑模态框样式 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4); display: none;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--md-sys-color-surface);
+            width: 90%; max-width: 500px; border-radius: 28px;
+            padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 24px; color: var(--md-sys-color-on-surface); }
+        .modal-body { display: flex; flex-direction: column; gap: 16px; }
+        
+        .edit-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-left: 4px;
+        }
+
+        .edit-input {
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 8px; padding: 12px; font-size: 16px;
+            background: transparent; color: var(--md-sys-color-on-surface);
+            outline: none;
+        }
+        .edit-input:focus { border-color: var(--md-sys-color-primary); border-width: 2px; }
+        .edit-textarea { min-height: 150px; resize: vertical; font-family: inherit; }
+
+        /* 优先级选择器 */
+        .priority-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .priority-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .priority-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .priority-p0 { --p-color: var(--priority-0); }
+        .priority-p1 { --p-color: var(--priority-1); }
+        .priority-p2 { --p-color: var(--priority-2); }
+        .priority-p3 { --p-color: var(--priority-3); }
+
+        .priority-option .priority-dot { background-color: var(--p-color); }
+        .priority-option.selected {
+            background-color: var(--p-color);
+            color: white;
+            border-color: var(--p-color);
+        }
+        .priority-option.selected .priority-dot { background-color: white; }
+        .priority-option.priority-p2.selected { color: black; }
+        .priority-option.priority-p2.selected .priority-dot { background-color: black; }
+
+        /* 提醒设置 */
+        .reminder-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--md-sys-color-surface-container-high);
+            border-radius: 12px;
+        }
+
+        .reminder-type-select {
+            background: transparent;
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 4px;
+            padding: 4px;
+            outline: none;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .timestamp-info {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            text-align: right;
+        }
+
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .btn {
+            padding: 10px 24px; border-radius: 100px; border: none;
+            cursor: pointer; font-weight: 500; transition: background 0.2s;
+        }
+        .btn-text { background: transparent; color: var(--md-sys-color-primary); }
+        .btn-text:hover { background: rgba(103, 80, 164, 0.08); }
+        .btn-filled { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+        .btn-filled:hover { box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+        /* 同步状态样式 */
+        #sync-status {
+            font-size: 12px;
+            color: var(--md-sys-color-outline-variant);
+            width: 140px;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 8px;
+            text-align: left;
+        }
+
+        /* 同步旋转动画 */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+        .syncing {
+            animation: spin 1s linear infinite;
+        }
+
+        body { opacity: 0; transition: opacity 0.5s; }
+    </style>
+</head>
+<body>
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="material-icons-outlined">description</span>
+        <span>SecureNote</span>
+    </div>
+    <div class="nav-item active">
+        <span class="material-icons-outlined">note</span>
+        <span>全部笔记</span>
+    </div>
+    <div class="nav-item">
+        <span class="material-icons-outlined">star_outline</span>
+        <span>收藏夹</span>
+    </div>
+    <div class="nav-item">
+        <span class="material-icons-outlined">calendar_today</span>
+        <span>日程</span>
+    </div>
+    <div style="flex: 1;"></div>
+    <div class="nav-item" onclick="logout()">
+        <span class="material-icons-outlined">logout</span>
+        <span>退出连接</span>
+    </div>
+</nav>
+
+<main class="main-content">
+    <header class="top-bar">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <button class="icon-button" onclick="toggleSidebar()">
+                <span class="material-icons-outlined">menu</span>
+            </button>
+            <div class="search-box">
+                <span class="material-icons-outlined">search</span>
+                <input type="text" id="searchInput" placeholder="搜索标题或内容" oninput="filterNotes()">
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; flex-shrink: 0;">
+            <button class="icon-button" onclick="openCreator()" title="添加笔记">
+                <span class="material-icons-outlined">add</span>
+            </button>
+            <button class="icon-button" onclick="loadNotes()" title="立即同步">
+                <span id="sync-icon" class="material-icons-outlined">sync</span>
+            </button>
+            <span id="sync-status">就绪</span>
+            <div class="icon-button" style="background: #ddd;">
+                <span class="material-icons-outlined">person</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="notes-grid" id="notesGrid"></div>
+</main>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">编辑笔记</div>
+            <button class="icon-button" onclick="closeEditor()">
+                <span class="material-icons-outlined">close</span>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- 标题输入 -->
+            <div class="edit-field-group">
+                <input type="text" id="editTitle" class="edit-input" placeholder="标题">
+            </div>
+
+            <!-- 内容输入 -->
+            <div class="edit-field-group">
+                <textarea id="editContent" class="edit-input edit-textarea" placeholder="写点什么..."></textarea>
+            </div>
+
+            <!-- 优先级选择 -->
+            <div class="edit-field-group">
+                <span class="field-label">优先级</span>
+                <div class="priority-selector">
+                    <div class="priority-option priority-p0" onclick="setPriority(0)" data-value="0">
+                        <div class="priority-dot"></div>重要且紧急
+                    </div>
+                    <div class="priority-option priority-p1" onclick="setPriority(1)" data-value="1">
+                        <div class="priority-dot"></div>重要不紧急
+                    </div>
+                    <div class="priority-option priority-p2" onclick="setPriority(2)" data-value="2">
+                        <div class="priority-dot"></div>紧急不重要
+                    </div>
+                    <div class="priority-option priority-p3" onclick="setPriority(3)" data-value="3">
+                        <div class="priority-dot"></div>不重要不紧急
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提醒设置 -->
+            <div class="edit-field-group">
+                <span class="field-label">提醒设置</span>
+                <div class="reminder-group">
+                    <span class="material-icons-outlined" style="font-size: 20px;">notifications</span>
+                    <select id="reminderType" class="reminder-type-select" onchange="toggleReminderTime()">
+                        <option value="none">不提醒</option>
+                        <option value="once">单次提醒</option>
+                        <option value="daily">每日提醒</option>
+                    </select>
+                    <input type="datetime-local" id="reminderTime" class="edit-input" style="padding: 4px 8px; display: none; font-size: 14px;">
+                </div>
+            </div>
+
+            <!-- 时间戳 -->
+            <div id="timestampInfo" class="timestamp-info"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-text" style="color: var(--md-sys-color-error); display: none;" onclick="deleteNote()" id="deleteBtn">删除</button>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-text" onclick="closeEditor()">取消</button>
+            <button class="btn btn-filled" onclick="saveNote()">保存并同步</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allNotes = [];
+    let currentEditingNote = null;
+    let syncTimer = null;
+    let selectedPriority = 3;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('sn_token');
+        const pwd = localStorage.getItem('sn_pwd') || sessionStorage.getItem('sn_temp_pwd');
+
+        if (!token || !pwd) {
+            window.location.replace('/');
+        } else {
+            document.body.style.opacity = '1';
+            const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+            if (isCollapsed) document.getElementById('sidebar').classList.add('collapsed');
+
+            loadNotes();
+            syncTimer = setInterval(loadNotes, 30000);
+        }
+    });
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+    }
+
+    async function loadNotes() {
+        const statusEl = document.getElementById('sync-status');
+        const syncIcon = document.getElementById('sync-icon');
+        const pwd = localStorage.getItem('sn_pwd') || sessionStorage.getItem('sn_temp_pwd');
+
+        if (syncIcon) syncIcon.classList.add('syncing');
+        statusEl.innerText = '同步中...';
+        const startTime = Date.now();
+
+        try {
+            const response = await fetch('/api/notes');
+            if (!response.ok) throw new Error('同步失败');
+
+            const pkg = await response.json();
+            const key = CryptoJS.SHA256(pwd);
+            const iv = CryptoJS.enc.Base64.parse(pkg.iv);
+            const decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: CryptoJS.enc.Base64.parse(pkg.data) },
+                key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+            );
+
+            const resultText = decrypted.toString(CryptoJS.enc.Utf8);
+            if (!resultText) throw new Error('解密失败');
+
+            allNotes = JSON.parse(resultText);
+            filterNotes();
+
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 1000) {
+                await new Promise(resolve => setTimeout(resolve, 1000 - elapsedTime));
+            }
+
+            statusEl.innerText = '上次同步: ' + new Date().toLocaleTimeString();
+        } catch (error) {
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 1000) {
+                await new Promise(resolve => setTimeout(resolve, 1000 - elapsedTime));
+            }
+            statusEl.innerText = '同步错误';
+            console.error(error);
+        } finally {
+            if (syncIcon) syncIcon.classList.remove('syncing');
+        }
+    }
+
+    const priorityLabels = ["重要且紧急", "重要不紧急", "紧急不重要", "不重要不紧急"];
+
+    function renderNotes(notes) {
+        const grid = document.getElementById('notesGrid');
+        if (notes.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--md-sys-color-on-surface-variant);">空空如也</div>`;
+            return;
+        }
+
+        grid.innerHTML = notes.map(note => {
+            const timeLeft = getRemainingTime(note);
+            let prio = 3;
+            if (note.priority !== undefined) {
+                prio = parseInt(note.priority);
+            } else if (note.importance) {
+                const idx = priorityLabels.indexOf(note.importance);
+                if (idx !== -1) prio = idx;
+            }
+
+            return `
+            <div class="note-card" onclick="openEditorById(${note.id})">
+                <div class="note-header">
+                    <div class="note-title">${escapeHtml(note.title || '无标题')}</div>
+                    <span class="importance-tag priority-tag-${prio}">${priorityLabels[prio]}</span>
+                </div>
+                <div class="note-meta">
+                    <div class="meta-item"><i class="material-icons-outlined">schedule</i>${formatFullDate(note.timestamp)}</div>
+                    ${note.location ? `<div class="meta-item"><i class="material-icons-outlined">place</i>${escapeHtml(note.location)}</div>` : ''}
+                    ${note.weather ? `<div class="meta-item"><i class="material-icons-outlined">wb_sunny</i>${escapeHtml(note.weather)}</div>` : ''}
+                </div>
+                <div class="note-excerpt">${escapeHtml(note.content || '')}</div>
+                <div class="note-footer">
+                    <div class="reminder-box ${timeLeft.isExpired ? 'expired' : ''}">
+                        ${timeLeft.text ? `<i class="material-icons-outlined">alarm</i><span>${timeLeft.text}</span>` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons-outlined" style="font-size: 16px;">lock</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function setPriority(level) {
+        selectedPriority = level;
+        document.querySelectorAll('.priority-option').forEach(opt => {
+            opt.classList.remove('selected');
+            if (parseInt(opt.dataset.value) === level) {
+                opt.classList.add('selected');
+            }
+        });
+    }
+
+    function toggleReminderTime() {
+        const type = document.getElementById('reminderType').value;
+        const timeInput = document.getElementById('reminderTime');
+        
+        if (type === 'daily') {
+            timeInput.type = 'time';
+        } else {
+            timeInput.type = 'datetime-local';
+        }
+        
+        timeInput.style.display = type === 'none' ? 'none' : 'block';
+    }
+
+    function openCreator() {
+        currentEditingNote = null;
+        document.getElementById('modalTitle').innerText = '新建笔记';
+        document.getElementById('editTitle').value = '';
+        document.getElementById('editContent').value = '';
+        document.getElementById('reminderType').value = 'none';
+        toggleReminderTime();
+        document.getElementById('reminderTime').value = '';
+        document.getElementById('timestampInfo').innerText = '';
+        document.getElementById('deleteBtn').style.display = 'none';
+        setPriority(3);
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function openEditorById(id) {
+        const note = allNotes.find(n => n.id === id);
+        if (note) openEditor(note);
+    }
+
+    function openEditor(note) {
+        currentEditingNote = note;
+        document.getElementById('modalTitle').innerText = '编辑笔记';
+        document.getElementById('editTitle').value = note.title || '';
+        document.getElementById('editContent').value = note.content || '';
+        
+        // 核心修复：根据手机端字段判定提醒类型并回显
+        const typeSelect = document.getElementById('reminderType');
+        const timeInput = document.getElementById('reminderTime');
+
+        if (note.reminderDate && note.onceReminderTime) {
+            // 单次提醒
+            typeSelect.value = 'once';
+            toggleReminderTime();
+            timeInput.value = `${note.reminderDate}T${note.onceReminderTime}`;
+        } else if (note.reminderTime && note.reminderTime.includes(':')) {
+            // 每日提醒
+            typeSelect.value = 'daily';
+            toggleReminderTime();
+            timeInput.value = note.reminderTime;
+        } else {
+            typeSelect.value = 'none';
+            toggleReminderTime();
+            timeInput.value = '';
+        }
+
+        document.getElementById('deleteBtn').style.display = 'block';
+        
+        const date = new Date(note.timestamp || Date.now());
+        document.getElementById('timestampInfo').innerText = `上次修改: ${date.toLocaleString()}`;
+        
+        let prio = 3;
+        if (note.priority !== undefined) {
+            prio = parseInt(note.priority);
+        } else if (note.importance) {
+            const idx = priorityLabels.indexOf(note.importance);
+            if (idx !== -1) prio = idx;
+        }
+        setPriority(prio);
+        
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditor() {
+        document.getElementById('editModal').style.display = 'none';
+        currentEditingNote = null;
+    }
+
+    async function saveNote() {
+        const newTitle = document.getElementById('editTitle').value.trim();
+        const newContent = document.getElementById('editContent').value.trim();
+        const reminderType = document.getElementById('reminderType').value;
+        const reminderTimeStr = document.getElementById('reminderTime').value;
+        
+        if (!newTitle && !newContent) {
+            alert('标题或内容不能为空');
+            return;
+        }
+
+        // 核心修复：构造符合 Android 端 Note.java 的提醒字段
+        let finalReminderTime = ""; // 每日提醒 HH:mm
+        let finalReminderDate = ""; // 单次日期 yyyy-MM-dd
+        let finalOnceReminderTime = ""; // 单次时间 HH:mm
+
+        if (reminderTimeStr) {
+            if (reminderType === 'daily') {
+                finalReminderTime = reminderTimeStr;
+            } else if (reminderType === 'once') {
+                const [datePart, timePart] = reminderTimeStr.split('T');
+                finalReminderDate = datePart;
+                finalOnceReminderTime = timePart;
+            }
+        }
+
+        const pwd = localStorage.getItem('sn_pwd') || sessionStorage.getItem('sn_temp_pwd');
+        
+        let noteToSave;
+        let endpoint;
+        
+        if (currentEditingNote) {
+            noteToSave = { 
+                ...currentEditingNote, 
+                title: newTitle, 
+                content: newContent, 
+                timestamp: Date.now(),
+                priority: selectedPriority,
+                importance: priorityLabels[selectedPriority],
+                // 同步手机端字段
+                reminderTime: finalReminderTime,
+                reminderDate: finalReminderDate,
+                onceReminderTime: finalOnceReminderTime
+            };
+            endpoint = '/api/notes/update';
+        } else {
+            noteToSave = { 
+                id: Date.now(),
+                title: newTitle, 
+                content: newContent, 
+                timestamp: Date.now(),
+                priority: selectedPriority,
+                importance: priorityLabels[selectedPriority],
+                // 同步手机端字段
+                reminderTime: finalReminderTime,
+                reminderDate: finalReminderDate,
+                onceReminderTime: finalOnceReminderTime,
+                weather: '',
+                location: '网页端'
+            };
+            endpoint = '/api/notes/add';
+        }
+
+        try {
+            const key = CryptoJS.SHA256(pwd);
+            const iv = CryptoJS.lib.WordArray.random(16);
+            const encrypted = CryptoJS.AES.encrypt(
+                JSON.stringify(noteToSave),
+                key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+            );
+
+            const payload = {
+                iv: CryptoJS.enc.Base64.stringify(iv),
+                data: encrypted.toString()
+            };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                closeEditor();
+                loadNotes();
+            } else {
+                alert('保存失败，请检查连接');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('保存出错');
+        }
+    }
+
+    async function deleteNote() {
+        if (!currentEditingNote) return;
+        if (!confirm('确定要删除这条笔记吗？')) return;
+
+        try {
+            const response = await fetch(`/api/notes/delete?id=${currentEditingNote.id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                closeEditor();
+                loadNotes();
+            } else {
+                alert('删除失败');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('删除出错');
+        }
+    }
+
+    function filterNotes() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        if (!query) {
+            renderNotes(allNotes);
+            return;
+        }
+        const { match } = pinyinPro;
+        const filtered = allNotes.filter(note => {
+            const title = (note.title || '').toLowerCase();
+            const content = (note.content || '').toLowerCase();
+            if (title.includes(query) || content.includes(query)) return true;
+            try {
+                if (match(title, query) || match(content, query)) return true;
+            } catch (e) { return false; }
+            return false;
+        });
+        renderNotes(filtered);
+    }
+
+    function getRemainingTime(note) {
+        // 核心修复：适配手机端字段进行剩余时间计算
+        let type = 'none';
+        let timeVal = '';
+
+        if (note.reminderDate && note.onceReminderTime) {
+            type = 'once';
+            timeVal = `${note.reminderDate}T${note.onceReminderTime}`;
+        } else if (note.reminderTime && note.reminderTime.includes(':')) {
+            type = 'daily';
+            timeVal = note.reminderTime;
+        }
+        
+        if (type === 'none' || !timeVal) return { text: '', isExpired: false };
+        
+        let targetDate;
+        if (type === 'once') {
+            targetDate = new Date(timeVal);
+        } else if (type === 'daily') {
+            const today = new Date().toISOString().split('T')[0];
+            targetDate = new Date(`${today}T${timeVal}`);
+            if (targetDate < new Date()) targetDate.setDate(targetDate.getDate() + 1);
+        }
+        
+        if (!targetDate || isNaN(targetDate.getTime())) return { text: '', isExpired: false };
+
+        const diff = targetDate - new Date();
+        if (diff < 0) return { text: '已过期', isExpired: true };
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        let text = "剩余: ";
+        if (days > 0) text += `${days}天 `;
+        if (hours > 0 || days > 0) text += `${hours}时 `;
+        text += `${mins}分`;
+        return { text: text, isExpired: false };
+    }
+
+    function formatFullDate(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function logout() {
+        clearInterval(syncTimer);
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.replace('/');
+    }
+</script>
+</body>
+</html>

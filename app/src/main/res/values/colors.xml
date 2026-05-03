@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础颜色 -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- 引导页颜色 (activity_main.xml) -->
+    <color name="guide_overlay_background">#AA000000</color>
+    <color name="guide_text_white">#FFFFFF</color>
+
+    <!-- 底部导航栏 -->
+    <color name="bottom_nav_bg">#FFFFFF</color>
+    <color name="bottom_nav_bg_transparent">#00FFFFFF</color>
+    
+    <!-- 状态标记颜色 (item_note.xml) -->
+    <color name="priority_none">#00000000</color>
+</resources>

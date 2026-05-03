@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 使用比普通表头略深的颜色，适配深色模式 -->
+    <solid android:color="?attr/colorSurfaceVariant" />
+    <stroke
+        android:width="0.5dp"
+        android:color="?attr/colorOutlineVariant" />
+</shape>

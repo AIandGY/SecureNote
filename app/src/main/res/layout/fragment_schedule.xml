@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/windowBackground">
+
+    <!-- 1. 左上角固定区域 (时间轴标题) -->
+    <TextView
+        android:id="@+id/corner_label"
+        android:layout_width="85dp"
+        android:layout_height="50dp"
+        android:background="?attr/colorSurfaceVariant"
+        android:gravity="center"
+        android:text="时间"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 2. 横向表头 (周一至周日) -->
+    <HorizontalScrollView
+        android:id="@+id/header_h_scroll"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:background="?attr/colorSurfaceVariant"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/corner_label"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/header_h_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- 3. 竖向时间表头 -->
+    <ScrollView
+        android:id="@+id/header_v_scroll"
+        android:layout_width="85dp"
+        android:layout_height="0dp"
+        android:background="?attr/colorSurface"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/corner_label">
+
+        <TableLayout
+            android:id="@+id/header_v_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </ScrollView>
+
+    <!-- 4. 主内容区域 -->
+    <ScrollView
+        android:id="@+id/content_v_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/header_v_scroll"
+        app:layout_constraintTop_toBottomOf="@id/header_h_scroll">
+
+        <HorizontalScrollView
+            android:id="@+id/content_h_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TableLayout
+                android:id="@+id/content_table"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </HorizontalScrollView>
+    </ScrollView>
+
+    <!-- 5. 返回本周悬浮按钮：初始隐藏，样式与位置与笔记页面一致 -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_back_to_today"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="110dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/icons_fixed" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

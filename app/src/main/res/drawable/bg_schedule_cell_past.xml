@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 过去时段背景：使用 M3 容器色，深色模式下会自动变暗 -->
+    <solid android:color="?attr/colorSurfaceContainerHigh" />
+    <stroke
+        android:width="0.5dp"
+        android:color="?attr/colorOutlineVariant" />
+</shape>

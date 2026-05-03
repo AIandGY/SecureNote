@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="设置拉黑准则"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="选择生效的属性，勾选即表示拦截匹配该项的访问"
+            android:textSize="12sp" />
+
+        <!-- 匹配模式开关 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="全匹配"
+                android:textSize="14sp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_match_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="单命中"
+                android:textSize="14sp" />
+            
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="（默认单命中）"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"/>
+        </LinearLayout>
+
+        <!-- IP 属性 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/cb_block_ip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IP 地址：" />
+
+            <EditText
+                android:id="@+id/et_rule_ip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="192.168.1.1"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- OS 属性 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/cb_block_os"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="操作系统：" />
+
+            <EditText
+                android:id="@+id/et_rule_os"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Windows"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Browser 属性 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/cb_block_browser"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="浏览器：" />
+
+            <EditText
+                android:id="@+id/et_rule_browser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Edge"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Cookie ID 属性 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/cb_block_device_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cookie ID：" />
+
+            <EditText
+                android:id="@+id/et_rule_device_id"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="uuid-..."
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- 设备名属性 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/cb_block_device_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="备注名：" />
+
+            <EditText
+                android:id="@+id/et_rule_device_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="给规则起个名"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

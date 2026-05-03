@@ -1,0 +1,40 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.aigy.securenote.MainActivity">
+
+    <!-- 局域网服务图标：默认隐藏，开启时显示 -->
+    <item
+        android:id="@+id/action_wifi_service"
+        android:icon="@drawable/ic_wifi"
+        android:title="局域网服务"
+        android:orderInCategory="80"
+        android:visible="false"
+        app:iconTint="?attr/colorControlNormal"
+        app:showAsAction="always" />
+
+    <!-- 筛选与排序按钮：仅在便签页面显示 -->
+    <item
+        android:id="@+id/action_filter"
+        android:icon="@drawable/icons_sort"
+        android:title="筛选与排序"
+        android:orderInCategory="90"
+        app:iconTint="?attr/colorControlNormal"
+        app:showAsAction="always" />
+
+    <!-- 锁定按钮：仅在密码本页面显示 -->
+    <item
+        android:id="@+id/action_lock"
+        android:icon="@drawable/icons_lock"
+        android:title="锁定并返回"
+        android:orderInCategory="95"
+        android:visible="false"
+        app:iconTint="?attr/colorControlNormal"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="设置"
+        app:showAsAction="never" />
+</menu>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureNote 身份验证</title>
+    <!-- 引入 CryptoJS 解决局域网 HTTP 环境下 Web Crypto 禁用的问题 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root { --md-sys-color-primary: #6750A4; --md-sys-color-surface: #F7F2FA; }
+        body { font-family: 'Roboto', sans-serif; background: var(--md-sys-color-surface); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2.5rem; border-radius: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 90%; max-width: 360px; text-align: center; }
+        h2 { color: #1D1B20; font-size: 24px; margin-bottom: 2rem; font-weight: 400; }
+        input[type="password"] { width: 100%; padding: 16px; border: 1px solid #79747E; border-radius: 4px; box-sizing: border-box; font-size: 16px; transition: border 0.2s; margin-bottom: 1.5rem; outline: none; }
+        input[type="password"]:focus { border: 2px solid var(--md-sys-color-primary); }
+        .options { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; color: #49454F; font-size: 14px; cursor: pointer; user-select: none; }
+        input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--md-sys-color-primary); margin: 0; }
+        button { width: 100%; padding: 12px; background: var(--md-sys-color-primary); color: white; border: none; border-radius: 100px; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        button:hover { box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 1.5rem; font-size: 13px; min-height: 20px; line-height: 1.4; }
+        .error { color: #B3261E; }
+        .success { color: #43A047; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>身份验证</h2>
+    <input type="password" id="pwd" placeholder="输入访问密码" autocomplete="current-password">
+    <label class="options" for="rem">
+        <input type="checkbox" id="rem">
+        <span>记住密码</span>
+    </label>
+    <button onclick="doVerify()" id="btn">验证并进入</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    window.onload = () => {
+        const saved = localStorage.getItem('sn_pwd');
+        const rem = document.getElementById('rem');
+        const pwd = document.getElementById('pwd');
+        if(saved) {
+            pwd.value = saved;
+            rem.checked = true;
+        }
+    };
+
+    async function doVerify() {
+        const pwdInput = document.getElementById('pwd').value;
+        const rem = document.getElementById('rem').checked;
+        const status = document.getElementById('status');
+        const btn = document.getElementById('btn');
+
+        if(!pwdInput) { status.innerText = "请输入访问密码"; status.className="error"; return; }
+        
+        status.innerText = "正在验证...";
+        status.className = "";
+        btn.disabled = true;
+
+        try {
+            // 1. 获取挑战包
+            const res = await fetch('/api/auth/package');
+            if(!res.ok) throw new Error("连接失败，请检查手机服务是否开启");
+            const pkg = await res.json();
+
+            // 2. 使用 AES-CBC 进行解密 (PKCS7 填充)
+            const key = CryptoJS.SHA256(pwdInput);
+            const iv = CryptoJS.enc.Base64.parse(pkg.iv);
+            const ciphertext = CryptoJS.enc.Base64.parse(pkg.data);
+
+            const decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: ciphertext },
+                key,
+                { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+            );
+
+            const resultText = decrypted.toString(CryptoJS.enc.Utf8);
+            if(!resultText) throw new Error("密码错误或解密失败");
+
+            // 3. 提交回传验证
+            const vRes = await fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sid: pkg.sid, decrypted: resultText })
+            });
+
+            const vData = await vRes.json();
+            if(vData.success) {
+                status.innerText = "验证成功，跳转中...";
+                status.className = "success";
+                
+                // 核心修复：无论是否记住，都存入当前会话以供解密
+                sessionStorage.setItem('sn_temp_pwd', pwdInput);
+                localStorage.setItem('sn_token', vData.token);
+                
+                if(rem) localStorage.setItem('sn_pwd', pwdInput);
+                else localStorage.removeItem('sn_pwd');
+                
+                setTimeout(() => location.href = '/index.html', 600);
+            } else {
+                throw new Error("访问密码验证未通过");
+            }
+        } catch(e) {
+            console.error(e);
+            status.innerText = e.message;
+            status.className = "error";
+            btn.disabled = false;
+        }
+    }
+
+    document.getElementById('pwd').addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') doVerify();
+    });
+</script>
+</body>
+</html>

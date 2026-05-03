@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 底部导航栏背景颜色（深色模式：深灰/黑） -->
+    <color name="bottom_nav_bg">#121212</color>
+    <color name="bottom_nav_bg_transparent">#00121212</color>
+</resources>
